@@ -1,2 +1,0 @@
-# accelerate
-project management tool
