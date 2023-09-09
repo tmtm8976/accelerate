@@ -3,22 +3,32 @@ import { User } from './user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createUserInput } from './dto/create-user.input';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-    constructor(@InjectRepository(User) private usersRepository: Repository<User>){}
+  constructor(
+    @InjectRepository(User) private usersRepository: Repository<User>,
+  ) {}
 
-    createUser(createUserInput: createUserInput): Promise<User>{
-        const newUser = this.usersRepository.create(createUserInput); // insert a user
-        return this.usersRepository.save(newUser)
-    }
+  async createUser(createUserInput: createUserInput): Promise<User> {
 
-    async findAll(): Promise<User[]>{
-        return this.usersRepository.find(); // SELECT * user
-    }
+    // hashing password
+    const saltOrRounds = 10;
+    const salt = await bcrypt.genSalt(saltOrRounds);
+    createUserInput.password = await bcrypt.hash(createUserInput.password, salt);
 
-    findOne(id: number): Promise<User> {
-        return this.usersRepository.findOneOrFail({ where: { id } });
-    }
+    const newUser = this.usersRepository.create({...createUserInput, salt: salt}); // insert a user
+    return this.usersRepository.save(newUser);
+  }
+
+  async findAll(): Promise<User[]> {
+    return this.usersRepository.find(); // SELECT * user
+  }
+
+  findOne(username: string): Promise<User> {
+    return this.usersRepository.findOneOrFail({ where: { username } });
+  }
+
+  
 }
-
